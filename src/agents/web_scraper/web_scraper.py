@@ -1,8 +1,9 @@
 from langchain.tools import BaseTool
-from langchain.agents import initialize_agent, AgentType
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.agents.agent import AgentExecutor
 from src.utils.get_langchain_llm import get_langchain_llm
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage
 
 
 class WebScraper:
@@ -24,9 +25,8 @@ class WebScraper:
 
     def _initialize_agent(self) -> AgentExecutor:
         tools = [self._create_scraper_tool()]
-        return initialize_agent(
-            tools, self.llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=False
-        )
+        agent = create_react_agent(self.llm, tools)
+        return agent
 
     def _create_prompt(self, url: str, instructions: str) -> str:
         """Create a prompt template for scraping."""
@@ -35,11 +35,15 @@ class WebScraper:
     async def scrape(self, url: str, instructions: str) -> str:
         """Scrape content from a given URL"""
         prompt = self._create_prompt(url, instructions)
-        result = self.agent.invoke({"input": prompt})
+        # LangGraph agents expect messages, not just strings
+        messages = [HumanMessage(content=prompt)]
+        result = self.agent.invoke({"messages": messages})
 
-        raw_content = result["output"]
-        return raw_content
+        # Extract the content from the result
+        if "messages" in result and len(result["messages"]) > 0:
+            return result["messages"][-1].content
+        return "No content retrieved"
 
-    async def scrape_multiple(self, urls: list[str]) -> list[str]:
+    async def scrape_multiple(self, urls: list[str], instructions: str) -> list[str]:
         """Scrape content from multiple URLs"""
-        return [await self.scrape(url) for url in urls]
+        return [await self.scrape(url, instructions) for url in urls]
