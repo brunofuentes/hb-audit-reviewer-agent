@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, Enum, Text, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from src.database.engine import Base
+from src.database.session import Base
 from src.database.enums import StepName
 
 
