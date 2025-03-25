@@ -32,17 +32,17 @@ class WebScraper:
         """Create a prompt template for scraping."""
         return f"Please extract the following information from the webpage at {url}: {instructions}"
 
-    async def scrape(self, url: str, instructions: str) -> str:
+    async def scrape(self, url: str, instructions: str) -> dict:
         """Scrape content from a given URL"""
         prompt = self._create_prompt(url, instructions)
-        # LangGraph agents expect messages, not just strings
+
         messages = [HumanMessage(content=prompt)]
         result = self.agent.invoke({"messages": messages})
 
         # Extract the content from the result
         if "messages" in result and len(result["messages"]) > 0:
-            return result["messages"][-1].content
-        return "No content retrieved"
+            return {"raw_content": result["messages"][-1].content}
+        return {"raw_content": "No content retrieved"}
 
     async def scrape_multiple(self, urls: list[str], instructions: str) -> list[str]:
         """Scrape content from multiple URLs"""
