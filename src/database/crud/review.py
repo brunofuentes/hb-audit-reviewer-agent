@@ -9,7 +9,6 @@ from pydantic import BaseModel
 # Schemas for Create/Update operations
 class ReviewCreate(BaseModel):
     audit_url: str
-    audit_date: datetime
     status: ReviewStatus = ReviewStatus.PENDING
 
 
