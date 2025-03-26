@@ -15,6 +15,9 @@ def create_parser():
     # Analyze command
     analyze_parser = subparsers.add_parser("analyze", help="Analyze an audit report")
     analyze_parser.add_argument("url", help="URL of the audit report to analyze")
+    analyze_parser.add_argument(
+        "--debug", action="store_true", help="Print debug information"
+    )
     analyze_parser.set_defaults(func=run_analysis)
 
     # List reports command

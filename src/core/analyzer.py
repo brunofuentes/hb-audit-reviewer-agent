@@ -9,7 +9,7 @@ from src.database.enums import StepName
 from src.database.crud.review_step import ReviewStepCreate, review_step
 
 
-async def analyze_audit_url(url):
+async def analyze_audit_url(url, debug=False):
     """Run the complete analysis pipeline on a single audit URL"""
     print(f"Starting analysis of: {url}")
 
@@ -18,18 +18,17 @@ async def analyze_audit_url(url):
     review_obj = ReviewCreate(audit_url=url)
     db_review = review.create(db=db, obj_in=review_obj)
 
-    print(
-        f"Created review: ID={db_review.id}, URL={db_review.audit_url}, Status={db_review.status}"
-    )
+    if debug:
+        print(
+            f"Created review: ID={db_review.id}, URL={db_review.audit_url}, Status={db_review.status}"
+        )
 
-    # Scrape content
     print("Scraping content...")
     scraper = WebScraper()
     instructions = "Just get the full text of the page and return it as a string."
     webpage_content = await scraper.scrape(url=url, instructions=instructions)
     print("Content scraped successfully.")
 
-    # Create review step entry in database
     scraping_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.SCRAPING,
@@ -37,15 +36,16 @@ async def analyze_audit_url(url):
         output=webpage_content,
     )
     db_scraping_step = review_step.create(db=db, obj_in=scraping_step_obj)
-    print(
-        f"Created review step: ID={db_scraping_step.id}, "
-        f"Review ID={db_scraping_step.id}, "
-        f"Step Name={db_scraping_step.name}, "
-        f"Input={db_scraping_step.input}, "
-        f"Output={db_scraping_step.output}"
-    )
 
-    # Run syntax analysis
+    if debug:
+        print(
+            f"Created review step: ID={db_scraping_step.id}, "
+            f"Review ID={db_scraping_step.id}, "
+            f"Step Name={db_scraping_step.name}, "
+            f"Input={db_scraping_step.input}, "
+            f"Output={db_scraping_step.output}"
+        )
+
     print("Analyzing for syntax issues...")
     scout = SyntaxScout()
     syntax_analysis = await scout.analyze(webpage_content["raw_content"])
@@ -58,13 +58,15 @@ async def analyze_audit_url(url):
         output=syntax_analysis,
     )
     db_syntax_step = review_step.create(db=db, obj_in=syntax_step_obj)
-    print(
-        f"Created review step: ID={db_syntax_step.id}, "
-        f"Review ID={db_syntax_step.review_id}, "
-        f"Step Name={db_syntax_step.name}, "
-        f"Input={db_syntax_step.input}, "
-        f"Output={db_syntax_step.output}"
-    )
+
+    if debug:
+        print(
+            f"Created review step: ID={db_syntax_step.id}, "
+            f"Review ID={db_syntax_step.review_id}, "
+            f"Step Name={db_syntax_step.name}, "
+            f"Input={db_syntax_step.input}, "
+            f"Output={db_syntax_step.output}"
+        )
 
     # Run quality analysis
     print("Analyzing audit report quality...")
@@ -79,15 +81,16 @@ async def analyze_audit_url(url):
         output=quality_analysis,
     )
     db_quality_step = review_step.create(db=db, obj_in=quality_step_obj)
-    print(
-        f"Created review step: ID={db_quality_step.id}, "
-        f"Review ID={db_quality_step.review_id}, "
-        f"Step Name={db_quality_step.name}, "
-        f"Input={db_quality_step.input}, "
-        f"Output={db_quality_step.output}"
-    )
 
-    # Build the final report
+    if debug:
+        print(
+            f"Created review step: ID={db_quality_step.id}, "
+            f"Review ID={db_quality_step.review_id}, "
+            f"Step Name={db_quality_step.name}, "
+            f"Input={db_quality_step.input}, "
+            f"Output={db_quality_step.output}"
+        )
+
     print("Building consolidated review report...")
     report_builder = ReviewReportBuilder()
     review_report = await report_builder.build_report(syntax_analysis, quality_analysis)
@@ -96,7 +99,6 @@ async def analyze_audit_url(url):
         f"Syntax Analysis: {syntax_analysis}\nQuality Analysis: {quality_analysis}"
     )
 
-    # Create review step entry in database
     report_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.REPORT_GEN,
@@ -104,13 +106,15 @@ async def analyze_audit_url(url):
         output=review_report,
     )
     db_report_step = review_step.create(db=db, obj_in=report_step_obj)
-    print(
-        f"Created review step: ID={db_report_step.id}, "
-        f"Review ID={db_report_step.review_id}, "
-        f"Step Name={db_report_step.name}, "
-        f"Input={db_report_step.input}, "
-        f"Output={db_report_step.output}"
-    )
+
+    if debug:
+        print(
+            f"Created review step: ID={db_report_step.id}, "
+            f"Review ID={db_report_step.review_id}, "
+            f"Step Name={db_report_step.name}, "
+            f"Input={db_report_step.input}, "
+            f"Output={db_report_step.output}"
+        )
 
     # Save the report and return the path
     report_path = save_report(url, review_report)
