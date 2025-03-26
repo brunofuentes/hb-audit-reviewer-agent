@@ -7,6 +7,8 @@ from src.database.session import get_db
 from src.database.crud.review import ReviewCreate, review
 from src.database.enums import StepName
 from src.database.crud.review_step import ReviewStepCreate, review_step
+from src.database.models.review import ReviewStatus
+from sqlalchemy.orm import Session
 
 
 async def analyze_audit_url(url, debug=False):
@@ -50,7 +52,6 @@ async def analyze_audit_url(url, debug=False):
     scout = SyntaxScout()
     syntax_analysis = await scout.analyze(webpage_content["raw_content"])
 
-    # Create review step entry in database
     syntax_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.SYNTAX_CHECK,
@@ -125,4 +126,33 @@ async def analyze_audit_url(url, debug=False):
     )
     print(f"Full report saved to: {report_path}")
 
+    _update_review_status(db=db, review_id=db_review.id)
+
     return 0
+
+
+def _update_review_status(db: Session, review_id: int):
+    """
+    Check if all required steps are completed and update review status accordingly.
+    Sets status to SUCCESS if all required steps are complete, otherwise FAILURE.
+    """
+    review_steps = review_step.get_by_review_id(db=db, review_id=review_id)
+
+    required_steps = [
+        StepName.SCRAPING,
+        StepName.SYNTAX_CHECK,
+        StepName.QUALITY_CHECK,
+        StepName.REPORT_GEN,
+    ]
+
+    all_steps_completed = True
+    for step_name in required_steps:
+        step = next((s for s in review_steps if s.name == step_name), None)
+        if not step or step.output is None:
+            all_steps_completed = False
+            break
+
+    if all_steps_completed:
+        review.update_status(db=db, review_id=review_id, status=ReviewStatus.SUCCESS)
+    else:
+        review.update_status(db=db, review_id=review_id, status=ReviewStatus.FAILURE)
