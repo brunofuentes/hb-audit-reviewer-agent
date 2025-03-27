@@ -11,9 +11,14 @@ from src.database.models.review import ReviewStatus
 from sqlalchemy.orm import Session
 
 
-async def analyze_audit_url(url, debug=False):
+async def analyze_audit_url(
+    url: str, model_name: str = "openai", debug: bool = False
+) -> dict:
     """Run the complete analysis pipeline on a single audit URL"""
     print(f"Starting analysis of: {url}")
+
+    if model_name:
+        print(f"Using model from: {model_name}")
 
     # Create review entry in database
     db = get_db()
@@ -26,7 +31,7 @@ async def analyze_audit_url(url, debug=False):
         )
 
     print("Scraping content...")
-    scraper = WebScraper()
+    scraper = WebScraper(model_name=model_name)
     instructions = "Just get the full text of the page and return it as a string."
     webpage_content = await scraper.scrape(url=url, instructions=instructions)
     print("Content scraped successfully.")
@@ -36,6 +41,7 @@ async def analyze_audit_url(url, debug=False):
         name=StepName.SCRAPING,
         input=url,
         output=webpage_content,
+        llm_model=model_name,
     )
     db_scraping_step = review_step.create(db=db, obj_in=scraping_step_obj)
 
@@ -49,7 +55,7 @@ async def analyze_audit_url(url, debug=False):
         )
 
     print("Analyzing for syntax issues...")
-    scout = SyntaxScout()
+    scout = SyntaxScout(model_name=model_name)
     syntax_analysis = await scout.analyze(webpage_content["raw_content"])
 
     syntax_step_obj = ReviewStepCreate(
@@ -57,6 +63,7 @@ async def analyze_audit_url(url, debug=False):
         name=StepName.SYNTAX_CHECK,
         input=webpage_content["raw_content"],
         output=syntax_analysis,
+        llm_model=model_name,
     )
     db_syntax_step = review_step.create(db=db, obj_in=syntax_step_obj)
 
@@ -71,7 +78,7 @@ async def analyze_audit_url(url, debug=False):
 
     # Run quality analysis
     print("Analyzing audit report quality...")
-    quality_checker = AuditQualityChecker()
+    quality_checker = AuditQualityChecker(model_name=model_name)
     quality_analysis = await quality_checker.analyze(webpage_content["raw_content"])
 
     # Create review step entry in database
@@ -80,6 +87,7 @@ async def analyze_audit_url(url, debug=False):
         name=StepName.QUALITY_CHECK,
         input=webpage_content["raw_content"],
         output=quality_analysis,
+        llm_model=model_name,
     )
     db_quality_step = review_step.create(db=db, obj_in=quality_step_obj)
 
@@ -93,7 +101,7 @@ async def analyze_audit_url(url, debug=False):
         )
 
     print("Building consolidated review report...")
-    report_builder = ReviewReportBuilder()
+    report_builder = ReviewReportBuilder(model_name=model_name)
     review_report = await report_builder.build_report(syntax_analysis, quality_analysis)
 
     both_analysis_text = (
@@ -105,8 +113,14 @@ async def analyze_audit_url(url, debug=False):
         name=StepName.REPORT_GEN,
         input=both_analysis_text,
         output=review_report,
+        llm_model=model_name,
     )
     db_report_step = review_step.create(db=db, obj_in=report_step_obj)
+
+    if review_report["overall_score"] is not None:
+        review.update_score(
+            db=db, review_id=db_review.id, score=review_report["overall_score"]
+        )
 
     if debug:
         print(

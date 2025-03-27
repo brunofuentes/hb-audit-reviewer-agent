@@ -42,5 +42,13 @@ class CRUDReview(CRUDBase[Review, ReviewCreate, ReviewUpdate]):
             db.refresh(review)
         return review
 
+    def update_score(
+        self, db: Session, *, review_id: int, score: float
+    ) -> Optional[Review]:
+        """Update only the score of a review"""
+        review = self.get(db, id=review_id)
+        if review:
+            review.score = score
+
 
 review = CRUDReview(Review)

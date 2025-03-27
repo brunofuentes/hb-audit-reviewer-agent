@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Enum, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from src.database.session import Base
@@ -17,6 +17,7 @@ class Review(Base):
     id = Column(Integer, primary_key=True, index=True)
     audit_url = Column(String(255), nullable=False)
     status = Column(Enum(ReviewStatus), default=ReviewStatus.PENDING)
+    score = Column(Float, default=0)
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     steps = relationship(
