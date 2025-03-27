@@ -61,6 +61,14 @@ class ReviewReportBuilder:
         Aim for a concise summary that doesn't exceed 1000 words.
         """
 
+    def get_prompt(
+        self,
+        syntax_analysis: SyntaxScoutOutput,
+        quality_analysis: AuditQualityCheckerOutput,
+    ) -> str:
+        """Get the prompt for generating a consolidated review report."""
+        return self._create_prompt(syntax_analysis, quality_analysis)
+
     async def build_report(
         self,
         syntax_analysis: SyntaxScoutOutput,

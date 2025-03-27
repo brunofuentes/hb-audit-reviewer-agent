@@ -29,21 +29,25 @@ class WebScraper:
         agent = create_react_agent(self.llm, tools)
         return agent
 
-    def _create_prompt(self, url: str, instructions: str) -> str:
+    def _create_prompt(self, url: str) -> str:
         """Create a prompt template for scraping."""
-        return f"Please extract the following information from the webpage at {url}: {instructions}"
+        return (
+            f"Visit the webpage at {url}, extract the full raw content, "
+            "and return it as a plain text string. Do not include any additional formatting, "
+            "explanations, or metadata—only the extracted content."
+        )
 
-    async def scrape(self, url: str, instructions: str) -> WebScraperOutput:
+    def get_prompt(self, url: str) -> str:
+        """Get the prompt used for scraping a URL."""
+        return self._create_prompt(url)
+
+    async def scrape(self, url: str) -> WebScraperOutput:
         """Scrape content from a given URL"""
-        prompt = self._create_prompt(url, instructions)
+        prompt = self._create_prompt(url)
 
         messages = [HumanMessage(content=prompt)]
         try:
             result = self.agent.invoke({"messages": messages})
-
-            # Debug the result structure
-            print(f"Result type: {type(result)}")
-            print(f"Result content: {result}")
 
             if "messages" in result and len(result["messages"]) > 0:
                 content = result["messages"][-1].content

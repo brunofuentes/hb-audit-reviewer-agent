@@ -47,6 +47,10 @@ class SyntaxScout:
         Format your response as a structured list of issues and recommendations.
         """
 
+    def get_prompt(self, text_content: str) -> str:
+        """Get the prompt for linguistic analysis."""
+        return self._create_prompt(text_content=text_content)
+
     async def analyze(self, text_content: str) -> SyntaxScoutOutput:
         """Analyze text content and return structured feedback."""
         prompt = self._create_prompt(text_content=text_content)

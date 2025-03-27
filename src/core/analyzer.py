@@ -32,18 +32,13 @@ async def analyze_audit_url(
 
     print("Scraping content...")
     scraper = WebScraper(model_name=model_name)
-    instructions = """
-            Return the complete raw content of the webpage without any summarization,
-            interpretation, or additional comments.
-            Do not describe what you're doing, just output the exact text content.
-        """
-    webpage_content = await scraper.scrape(url=url, instructions=instructions)
+    webpage_content = await scraper.scrape(url=url)
     print("Content scraped successfully.")
 
     scraping_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.SCRAPING,
-        input=url,
+        input=scraper.get_prompt(url),
         output=webpage_content.model_dump(),
         llm_model=model_name,
     )
@@ -65,7 +60,7 @@ async def analyze_audit_url(
     syntax_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.SYNTAX_CHECK,
-        input=webpage_content.raw_content,
+        input=scout.get_prompt(webpage_content.raw_content),
         output=syntax_analysis.model_dump(),
         llm_model=model_name,
     )
@@ -89,7 +84,7 @@ async def analyze_audit_url(
     quality_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.QUALITY_CHECK,
-        input=webpage_content.raw_content,
+        input=quality_checker.get_prompt(webpage_content.raw_content),
         output=quality_analysis.model_dump(),
         llm_model=model_name,
     )
@@ -108,12 +103,10 @@ async def analyze_audit_url(
     report_builder = ReviewReportBuilder(model_name=model_name)
     review_report = await report_builder.build_report(syntax_analysis, quality_analysis)
 
-    both_analysis_text = f"Syntax Analysis: {syntax_analysis.result}\nQuality Analysis: {quality_analysis}"
-
     report_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.REPORT_GEN,
-        input=both_analysis_text,
+        input=report_builder.get_prompt(syntax_analysis, quality_analysis),
         output=review_report.model_dump(),
         llm_model=model_name,
     )

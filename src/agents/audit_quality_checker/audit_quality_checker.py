@@ -65,6 +65,10 @@ class AuditQualityChecker:
         Format your response as a structured evaluation with clear sections and actionable feedback.
         """
 
+    def get_prompt(self, audit_content: str) -> str:
+        """Get the prompt for audit report quality analysis."""
+        return self._create_prompt(audit_content=audit_content)
+
     async def analyze(self, audit_content: str) -> AuditQualityCheckerOutput:
         """Analyze audit report content and return structured feedback."""
         prompt = self._create_prompt(audit_content=audit_content)
