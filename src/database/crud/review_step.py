@@ -10,6 +10,7 @@ from pydantic import BaseModel
 class ReviewStepCreate(BaseModel):
     review_id: int
     name: StepName
+    llm_model: Optional[str] = None
     input: Optional[str] = None
     output: Optional[Dict[str, Any]] = None
 

@@ -18,6 +18,12 @@ def create_parser():
     analyze_parser.add_argument(
         "--debug", action="store_true", help="Print debug information"
     )
+    analyze_parser.add_argument(
+        "--model",
+        type=str,
+        default="openai",
+        help="LLM model to use for analysis",
+    )
     analyze_parser.set_defaults(func=run_analysis)
 
     # List reports command

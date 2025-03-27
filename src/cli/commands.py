@@ -4,7 +4,9 @@ from src.core.report import list_all_reports, get_report_summary, get_full_repor
 
 async def run_analysis(args):
     """Run full analysis on an audit URL"""
-    return await analyze_audit_url(url=args.url, debug=args.debug)
+    return await analyze_audit_url(
+        url=args.url, debug=args.debug, model_name=args.model
+    )
 
 
 async def list_reports(args):

@@ -16,7 +16,7 @@ def get_langchain_llm(model_name="openai"):
         The LangChain model instance configured for use
     """
     models = {
-        "claude": ChatAnthropic(
+        "anthropic": ChatAnthropic(
             model="claude-3-5-sonnet-20240620",
             api_key=os.getenv("ANTHROPIC_API_KEY"),
             temperature=0,
