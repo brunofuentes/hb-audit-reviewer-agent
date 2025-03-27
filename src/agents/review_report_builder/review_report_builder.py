@@ -2,6 +2,11 @@ from langchain.tools import BaseTool
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 from src.utils.get_langchain_llm import get_langchain_llm
+from src.agents.schemas import (
+    SyntaxScoutOutput,
+    AuditQualityCheckerOutput,
+    ReviewReportBuilderOutput,
+)
 
 
 class ReviewReportBuilder:
@@ -26,18 +31,22 @@ class ReviewReportBuilder:
         agent = create_react_agent(self.llm, tools)
         return agent
 
-    def _create_prompt(self, syntax_analysis: dict, quality_analysis: dict) -> str:
+    def _create_prompt(
+        self,
+        syntax_analysis: SyntaxScoutOutput,
+        quality_analysis: AuditQualityCheckerOutput,
+    ) -> str:
         """Create a prompt for generating a consolidated review report."""
         return f"""Generate a comprehensive review report based on the following analyses:
 
         SYNTAX ANALYSIS:
         ```
-        {syntax_analysis['analysis_result']}
+        {syntax_analysis.result}
         ```
 
         QUALITY ANALYSIS:
         ```
-        {quality_analysis['full_analysis']}
+        {quality_analysis.result}
         ```
 
         Please create a concise, professional report that:
@@ -45,14 +54,18 @@ class ReviewReportBuilder:
         2. Highlights the most critical issues that need attention
         3. Provides concrete recommendations for improvement
         4. Includes a brief assessment of overall report quality (using the structure score
-        of {quality_analysis['structure_score']}/10 and clarity score of {quality_analysis['clarity_score']}/10)
+        of {quality_analysis.structure_score}/10 and clarity score of {quality_analysis.clarity_score}/10)
 
         The report should be formatted for easy reading, with clear sections and professional language.
         Ensure the report is actionable and provides value to someone who wants to improve their audit report quality.
         Aim for a concise summary that doesn't exceed 1000 words.
         """
 
-    async def build_report(self, syntax_analysis: dict, quality_analysis: dict) -> dict:
+    async def build_report(
+        self,
+        syntax_analysis: SyntaxScoutOutput,
+        quality_analysis: AuditQualityCheckerOutput,
+    ) -> ReviewReportBuilderOutput:
         """Build a consolidated review report from syntax and quality analyses."""
         prompt = self._create_prompt(syntax_analysis, quality_analysis)
         messages = [HumanMessage(content=prompt)]
@@ -64,29 +77,31 @@ class ReviewReportBuilder:
             overall_score = self._calculate_overall_score(quality_analysis)
             assessment = self._get_assessment(overall_score)
 
-            return {
-                "report": report,
-                "overall_score": overall_score,
-                "assessment": assessment,
-                "structure_score": quality_analysis.get("structure_score", None),
-                "clarity_score": quality_analysis.get("clarity_score", None),
-                "has_major_issues": syntax_analysis.get("issues_detected", False)
-                or quality_analysis.get("quality_issues_detected", False),
-            }
+            return ReviewReportBuilderOutput(
+                result=report,
+                overall_score=overall_score,
+                assessment=assessment,
+                structure_score=quality_analysis.structure_score,
+                clarity_score=quality_analysis.clarity_score,
+                issues_detected=syntax_analysis.issues_detected
+                or quality_analysis.issues_detected,
+            )
 
-        return {
-            "report": "Unable to generate report",
-            "overall_score": None,
-            "assessment": "Unable to assess",
-            "structure_score": None,
-            "clarity_score": None,
-            "has_major_issues": None,
-        }
+        return ReviewReportBuilderOutput(
+            result="Unable to generate report",
+            issues_detected=False,
+            overall_score=None,
+            assessment="Unable to assess",
+            structure_score=None,
+            clarity_score=None,
+        )
 
-    def _calculate_overall_score(self, quality_analysis: dict) -> float:
+    def _calculate_overall_score(
+        self, quality_analysis: AuditQualityCheckerOutput
+    ) -> float:
         """Calculate overall score based on structure and clarity scores."""
-        structure = quality_analysis.get("structure_score", 5.0)
-        clarity = quality_analysis.get("clarity_score", 5.0)
+        structure = quality_analysis.structure_score or 5.0
+        clarity = quality_analysis.clarity_score or 5.0
 
         if structure is None and clarity is None:
             return 5.0

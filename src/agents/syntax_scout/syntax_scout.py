@@ -2,6 +2,7 @@ from langchain.tools import BaseTool
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 from src.utils.get_langchain_llm import get_langchain_llm
+from src.agents.schemas import SyntaxScoutOutput
 
 
 class SyntaxScout:
@@ -46,35 +47,34 @@ class SyntaxScout:
         Format your response as a structured list of issues and recommendations.
         """
 
-    async def analyze(self, text_content: str) -> dict:
+    async def analyze(self, text_content: str) -> SyntaxScoutOutput:
         """Analyze text content and return structured feedback."""
         prompt = self._create_prompt(text_content=text_content)
         messages = [HumanMessage(content=prompt)]
-        result = self.agent.invoke({"messages": messages})
 
-        # Extract the analysis from the result
-        if "messages" in result and len(result["messages"]) > 0:
-            analysis = result["messages"][-1].content
+        try:
+            result = self.agent.invoke({"messages": messages})
 
-            # Structure the response as a dictionary
-            return {
-                "raw_text": (
-                    text_content[:100] + "..."
-                    if len(text_content) > 100
-                    else text_content
-                ),
-                "issues_detected": (
-                    True
-                    if "error" in analysis.lower() or "issue" in analysis.lower()
-                    else False
-                ),
-                "analysis_result": analysis,
-            }
+            if "messages" in result and len(result["messages"]) > 0:
+                analysis = result["messages"][-1].content
 
-        return {
-            "raw_text": (
-                text_content[:100] + "..." if len(text_content) > 100 else text_content
-            ),
-            "issues_detected": False,
-            "analysis_result": "No analysis could be performed",
-        }
+                return SyntaxScoutOutput(
+                    issues_detected=(
+                        True
+                        if "error" in analysis.lower() or "issue" in analysis.lower()
+                        else False
+                    ),
+                    result=analysis,
+                    error=None,
+                )
+
+            return SyntaxScoutOutput(
+                issues_detected=False,
+                result="No analysis could be performed",
+                error="No analysis could be performed",
+            )
+
+        except Exception as e:
+            return SyntaxScoutOutput(
+                issues_detected=False, result="Analysis failed", error=str(e)
+            )

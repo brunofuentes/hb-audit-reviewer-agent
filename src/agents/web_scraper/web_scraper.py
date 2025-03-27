@@ -4,6 +4,7 @@ from langchain.agents.agent import AgentExecutor
 from src.utils.get_langchain_llm import get_langchain_llm
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage
+from src.agents.schemas import WebScraperOutput
 
 
 class WebScraper:
@@ -32,18 +33,27 @@ class WebScraper:
         """Create a prompt template for scraping."""
         return f"Please extract the following information from the webpage at {url}: {instructions}"
 
-    async def scrape(self, url: str, instructions: str) -> dict:
+    async def scrape(self, url: str, instructions: str) -> WebScraperOutput:
         """Scrape content from a given URL"""
         prompt = self._create_prompt(url, instructions)
 
         messages = [HumanMessage(content=prompt)]
-        result = self.agent.invoke({"messages": messages})
+        try:
+            result = self.agent.invoke({"messages": messages})
 
-        # Extract the content from the result
-        if "messages" in result and len(result["messages"]) > 0:
-            return {"raw_content": result["messages"][-1].content}
-        return {"raw_content": "No content retrieved"}
+            # Debug the result structure
+            print(f"Result type: {type(result)}")
+            print(f"Result content: {result}")
 
-    async def scrape_multiple(self, urls: list[str], instructions: str) -> list[str]:
-        """Scrape content from multiple URLs"""
-        return [await self.scrape(url, instructions) for url in urls]
+            if "messages" in result and len(result["messages"]) > 0:
+                content = result["messages"][-1].content
+                # Ensure content is a string
+                if not isinstance(content, str):
+                    if hasattr(content, "__str__"):
+                        content = str(content)
+                    else:
+                        content = repr(content)
+                return WebScraperOutput(raw_content=content)
+            return WebScraperOutput(raw_content="No content retrieved")
+        except Exception as e:
+            return WebScraperOutput(raw_content="", error=str(e))

@@ -2,6 +2,7 @@ from langchain.tools import BaseTool
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 from src.utils.get_langchain_llm import get_langchain_llm
+from src.agents.schemas import AuditQualityCheckerOutput
 
 
 class AuditQualityChecker:
@@ -64,7 +65,7 @@ class AuditQualityChecker:
         Format your response as a structured evaluation with clear sections and actionable feedback.
         """
 
-    async def analyze(self, audit_content: str) -> dict:
+    async def analyze(self, audit_content: str) -> AuditQualityCheckerOutput:
         """Analyze audit report content and return structured feedback."""
         prompt = self._create_prompt(audit_content=audit_content)
         messages = [HumanMessage(content=prompt)]
@@ -75,35 +76,25 @@ class AuditQualityChecker:
             analysis = result["messages"][-1].content
 
             # Structure the response as a dictionary
-            return {
-                "report_preview": (
-                    audit_content[:100] + "..."
-                    if len(audit_content) > 100
-                    else audit_content
-                ),
-                "quality_issues_detected": (
+            return AuditQualityCheckerOutput(
+                issues_detected=(
                     True
                     if "improvement" in analysis.lower()
                     or "enhance" in analysis.lower()
                     or "lacking" in analysis.lower()
                     else False
                 ),
-                "structure_score": self._extract_structure_score(analysis),
-                "clarity_score": self._extract_clarity_score(analysis),
-                "full_analysis": analysis,
-            }
+                result=analysis,
+                structure_score=self._extract_structure_score(analysis),
+                clarity_score=self._extract_clarity_score(analysis),
+            )
 
-        return {
-            "report_preview": (
-                audit_content[:100] + "..."
-                if len(audit_content) > 100
-                else audit_content
-            ),
-            "quality_issues_detected": False,
-            "structure_score": None,
-            "clarity_score": None,
-            "full_analysis": "No analysis could be performed",
-        }
+        return AuditQualityCheckerOutput(
+            issues_detected=False,
+            result="No analysis could be performed",
+            structure_score=None,
+            clarity_score=None,
+        )
 
     def _extract_structure_score(self, analysis: str) -> float:
         """Estimate a structure score from the analysis text (0.0-10.0)."""

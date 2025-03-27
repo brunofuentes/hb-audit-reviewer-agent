@@ -32,7 +32,11 @@ async def analyze_audit_url(
 
     print("Scraping content...")
     scraper = WebScraper(model_name=model_name)
-    instructions = "Just get the full text of the page and return it as a string."
+    instructions = """
+            Return the complete raw content of the webpage without any summarization,
+            interpretation, or additional comments.
+            Do not describe what you're doing, just output the exact text content.
+        """
     webpage_content = await scraper.scrape(url=url, instructions=instructions)
     print("Content scraped successfully.")
 
@@ -40,7 +44,7 @@ async def analyze_audit_url(
         review_id=db_review.id,
         name=StepName.SCRAPING,
         input=url,
-        output=webpage_content,
+        output=webpage_content.model_dump(),
         llm_model=model_name,
     )
     db_scraping_step = review_step.create(db=db, obj_in=scraping_step_obj)
@@ -56,13 +60,13 @@ async def analyze_audit_url(
 
     print("Analyzing for syntax issues...")
     scout = SyntaxScout(model_name=model_name)
-    syntax_analysis = await scout.analyze(webpage_content["raw_content"])
+    syntax_analysis = await scout.analyze(webpage_content.raw_content)
 
     syntax_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.SYNTAX_CHECK,
-        input=webpage_content["raw_content"],
-        output=syntax_analysis,
+        input=webpage_content.raw_content,
+        output=syntax_analysis.model_dump(),
         llm_model=model_name,
     )
     db_syntax_step = review_step.create(db=db, obj_in=syntax_step_obj)
@@ -79,14 +83,14 @@ async def analyze_audit_url(
     # Run quality analysis
     print("Analyzing audit report quality...")
     quality_checker = AuditQualityChecker(model_name=model_name)
-    quality_analysis = await quality_checker.analyze(webpage_content["raw_content"])
+    quality_analysis = await quality_checker.analyze(webpage_content.raw_content)
 
     # Create review step entry in database
     quality_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.QUALITY_CHECK,
-        input=webpage_content["raw_content"],
-        output=quality_analysis,
+        input=webpage_content.raw_content,
+        output=quality_analysis.model_dump(),
         llm_model=model_name,
     )
     db_quality_step = review_step.create(db=db, obj_in=quality_step_obj)
@@ -104,22 +108,20 @@ async def analyze_audit_url(
     report_builder = ReviewReportBuilder(model_name=model_name)
     review_report = await report_builder.build_report(syntax_analysis, quality_analysis)
 
-    both_analysis_text = (
-        f"Syntax Analysis: {syntax_analysis}\nQuality Analysis: {quality_analysis}"
-    )
+    both_analysis_text = f"Syntax Analysis: {syntax_analysis.result}\nQuality Analysis: {quality_analysis}"
 
     report_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.REPORT_GEN,
         input=both_analysis_text,
-        output=review_report,
+        output=review_report.model_dump(),
         llm_model=model_name,
     )
     db_report_step = review_step.create(db=db, obj_in=report_step_obj)
 
-    if review_report["overall_score"] is not None:
+    if review_report.overall_score is not None:
         review.update_score(
-            db=db, review_id=db_review.id, score=review_report["overall_score"]
+            db=db, review_id=db_review.id, score=review_report.overall_score
         )
 
     if debug:
@@ -136,7 +138,7 @@ async def analyze_audit_url(
 
     print("\nAnalysis complete!")
     print(
-        f"Overall Assessment: {review_report['assessment']} ({review_report['overall_score']:.1f}/10)"
+        f"Overall Assessment: {review_report.assessment} ({review_report.overall_score:.1f}/10)"
     )
     print(f"Full report saved to: {report_path}")
 
