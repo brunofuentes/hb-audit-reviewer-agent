@@ -22,9 +22,9 @@ async def analyze_audit_url(
     review_obj = ReviewCreate(audit_url=url)
     db_review = review.create(db=db, obj_in=review_obj)
 
-    scraper_model_name = "anthropic"
+    scraper_model_name = "openai"
     model_name_syntax = "openai-json"
-    model_name_quality = "openai-json-temp-05"
+    model_name_quality = "openai-json-temp-03"
     model_name_report = "openai-json"
 
     if debug:
