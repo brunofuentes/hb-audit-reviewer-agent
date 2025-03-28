@@ -29,24 +29,56 @@ class ReviewReportBuilder:
 
         Syntax Analysis:
         '''
-        {syntax_analysis.result}
+        {syntax_analysis.json_result["issues"]}
         '''
 
         Quality Analysis:
         '''
-        {quality_analysis.result}
+        {quality_analysis.json_result["issues"]}
         '''
+
+        First, evaluate all issues from both analyses:
+        - Remove any issues that don't make sense in context
+        - Filter out vague or poorly defined issues
+        - Resolve contradictions between the two analyses (if any)
+        - Ensure each issue is actionable and clear
 
         Return the review report in a JSON format with the following structure:
 
         {{
             "report": Consolidated report content, well formatted containing the list of issues in list format,
-            "issues": List of all issues from both analysis, with a description of the issue and its severity,
+            "issues": [
+                {{
+                    // Maintain all original key-value pairs from the source issue
+                    // Add a severity field if not already present
+                    "severity": "Critical/High/Medium/Low"
+                }}
+            ],
             "overall_score": A score from 0-10, where 10 is perfect
         }}
 
+           Severity levels:
+            - Critical: Issues that significantly impact security, functionality, or credibility
+            - High: Important problems that should be addressed promptly
+            - Medium: Issues that affect quality but don't compromise core functionality
+            - Low: Minor improvements or style suggestions
+
+        For the "report" field:
+        - Use proper markdown formatting with headers (##), bullet points, and emphasis
+        - Include sections for critical issues, improvements, and recommendations
+        - Add a summary section that highlights the most important findings
+        - Add a "Found Issues" section that lists the issues of the issues field and
+            its key-value pairs as bullet points
+
+        For the "issues" field:
+        - Keep all original key-value pairs from both analyses
+        - Add a "severity" field to each issue if not present (Critical, High, Medium, or Low)
+        - Sort issues from most critical to least critical
+        - If an issue appears in both analyses, merge them and keep the higher severity level
+
+        For the "overall_score" field, provide a numerical score from 0-10, where 10 is perfect.
+
         Do not include any other explanation or formatting outside of this JSON structure.
-        
         """
 
     def get_prompt(
