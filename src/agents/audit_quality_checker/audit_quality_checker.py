@@ -58,6 +58,8 @@ class AuditQualityChecker:
         - risk_methodology
         - comprehensiveness
         - findings_methodology_alignment
+
+        The issues must only be about the audit report, not the audit process itself.
         Quote the exact problematic text rather than describing its location.
         Provide 3-5 specific semantic recommendations as simple strings.
         Limit your analysis to the most significant issues (max 10 total issues).
