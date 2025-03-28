@@ -41,16 +41,7 @@ class AuditQualityCheckerOutput(BaseAgentOutput):
 class ReviewReportBuilderOutput(BaseAgentOutput):
     """Output schema for review report builder agent"""
 
-    structure_score: Optional[float] = Field(
-        default=None, description="Score for the structure of the audit report"
-    )
-    clarity_score: Optional[float] = Field(
-        default=None, description="Score for the clarity of the audit report"
-    )
-
-    overall_score: Optional[float] = Field(
-        default=None, description="Overall score for the audit report"
-    )
-    assessment: Optional[str] = Field(
-        default=None, description="Assessment of the audit report"
+    json_result: Optional[dict] = Field(
+        default=None,
+        description="Structured analysis of the result",
     )

@@ -50,7 +50,7 @@ class AuditQualityChecker:
                 "A third recommendation focused on semantic clarity"
             ],
             "summary": "Brief summary of the most critical issues (max 3 sentences)",
-            "overall_quality_score": 7 // A score from 1-10, where 10 is perfect
+            "score": 7 // A score from 1-10, where 10 is perfect
         }}
         
         For the issues array, only include items that represent actual problems found.

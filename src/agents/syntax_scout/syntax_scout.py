@@ -15,7 +15,7 @@ class SyntaxScout:
         '''
         {text_content}
         '''
-        Perform a comprehensive linguistic analysis and return results in a proper JSON format with the following structure:
+        Perform a comprehensive linguistic analysis and return results in a JSON format with the following structure:
         
         {{
             "issues": [
@@ -49,7 +49,7 @@ class SyntaxScout:
                 }}
             ],
             "summary": "Brief summary of most critical issues (max 3) and overall assessment",
-            "overall_quality_score": 7 // A score from 1-10, where 10 is perfect
+            "score": 7 // A score from 1-10, where 10 is perfect
         }}
         
         For the issues array, only include items that represent actual issues found.

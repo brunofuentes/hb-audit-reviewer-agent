@@ -53,16 +53,22 @@ async def analyze_audit_url(
             f"Output={db_scraping_step.output}"
         )
 
+    model_name_syntax = "openai-json"
+    model_name_quality = "openai-json-temp-05"
+    model_name_report = "openai-json"
+    scout = SyntaxScout(model_name=model_name_syntax)
+    quality_checker = AuditQualityChecker(model_name=model_name_quality)
+    report_builder = ReviewReportBuilder(model_name=model_name_report)
+
     print("Analyzing for syntax issues...")
-    scout = SyntaxScout(model_name=model_name)
     syntax_analysis = await scout.analyze(webpage_content.raw_content)
 
     syntax_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.SYNTAX_CHECK,
         input=scout.get_prompt(webpage_content.raw_content),
-        output=syntax_analysis.model_dump(),
-        llm_model=model_name,
+        output=syntax_analysis.json_result,
+        llm_model=model_name_syntax,
     )
     db_syntax_step = review_step.create(db=db, obj_in=syntax_step_obj)
 
@@ -77,7 +83,6 @@ async def analyze_audit_url(
 
     # Run quality analysis
     print("Analyzing audit report quality...")
-    quality_checker = AuditQualityChecker(model_name=model_name)
     quality_analysis = await quality_checker.analyze(webpage_content.raw_content)
 
     # Create review step entry in database
@@ -85,8 +90,8 @@ async def analyze_audit_url(
         review_id=db_review.id,
         name=StepName.QUALITY_CHECK,
         input=quality_checker.get_prompt(webpage_content.raw_content),
-        output=quality_analysis.model_dump(),
-        llm_model=model_name,
+        output=quality_analysis.json_result,
+        llm_model=model_name_quality,
     )
     db_quality_step = review_step.create(db=db, obj_in=quality_step_obj)
 
@@ -100,21 +105,31 @@ async def analyze_audit_url(
         )
 
     print("Building consolidated review report...")
-    report_builder = ReviewReportBuilder(model_name=model_name)
-    review_report = await report_builder.build_report(syntax_analysis, quality_analysis)
+    review_report = await report_builder.build_report(
+        webpage_content=webpage_content.raw_content,
+        syntax_analysis=syntax_analysis,
+        quality_analysis=quality_analysis,
+    )
 
     report_step_obj = ReviewStepCreate(
         review_id=db_review.id,
         name=StepName.REPORT_GEN,
-        input=report_builder.get_prompt(syntax_analysis, quality_analysis),
-        output=review_report.model_dump(),
-        llm_model=model_name,
+        input=report_builder.get_prompt(
+            webpage_content=webpage_content.raw_content,
+            syntax_analysis=syntax_analysis,
+            quality_analysis=quality_analysis,
+        ),
+        output=review_report.json_result,
+        llm_model=model_name_report,
     )
+
     db_report_step = review_step.create(db=db, obj_in=report_step_obj)
 
-    if review_report.overall_score is not None:
+    if review_report.json_result and "overall_score" in review_report.json_result:
         review.update_score(
-            db=db, review_id=db_review.id, score=review_report.overall_score
+            db=db,
+            review_id=db_review.id,
+            score=review_report.json_result["overall_score"],
         )
 
     if debug:
@@ -130,9 +145,7 @@ async def analyze_audit_url(
     report_path = save_report(url, review_report)
 
     print("\nAnalysis complete!")
-    print(
-        f"Overall Assessment: {review_report.assessment} ({review_report.overall_score:.1f}/10)"
-    )
+    print(f"Overall score: {review_report.json_result['overall_score']}")
     print(f"Full report saved to: {report_path}")
 
     _update_review_status(db=db, review_id=db_review.id)

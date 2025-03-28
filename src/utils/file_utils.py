@@ -24,7 +24,7 @@ def save_report(url: str, review_report: ReviewReportBuilderOutput):
     with open(report_path, "w") as f:
         f.write("# Audit Report Review\n\n")
         f.write(
-            f"**Overall Assessment:** {review_report.assessment} ({review_report.overall_score:.1f}/10)\n\n"
+            f"**Overall Assessment:** {review_report.json_result['overall_score']}\n\n"
         )
         f.write(review_report.result)
 
