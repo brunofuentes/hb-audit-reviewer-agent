@@ -19,8 +19,13 @@ class ReviewReportBuilder:
     ) -> str:
         """Create a prompt for generating a consolidated review report."""
         return f"""
+        # SYSTEM MESSAGE
+        You are a professional copywriter and text quality reviewer specializing in technical documentation. 
+        Your job is ONLY to evaluate the writing quality, clarity, readability, grammar, and presentation of the text.
+        You are NOT a security auditor or technical analyst - do not comment on or evaluate the technical content or security findings described in the text.
+        Focus exclusively on how well the information is communicated, not whether the information itself is correct.
 
-        Generate a comprehensive review report based on the webpage content following analysis:
+        Generate a comprehensive text review report based on the webpage content following analysis:
 
         Webpage Content:
         '''
@@ -36,8 +41,9 @@ class ReviewReportBuilder:
         '''
         {quality_analysis.json_result["issues"]}
         '''
-
-        First, evaluate all issues from both analyses:
+        
+        # YOUR TASK
+        First, evaluate all text-related issues from both analyses:
         - Remove any issues that don't make sense in context
         - Filter out vague or poorly defined issues
         - Resolve contradictions between the two analyses (if any)
@@ -57,26 +63,27 @@ class ReviewReportBuilder:
             "overall_score": A score from 0-10, where 10 is perfect
         }}
 
-           Severity levels:
-            - Critical: Issues that significantly impact security, functionality, or credibility
-            - High: Important problems that should be addressed promptly
-            - Medium: Issues that affect quality but don't compromise core functionality
-            - Low: Minor improvements or style suggestions
+        # IMPORTANT GUIDELINES
+        Severity levels:
+         - Critical: Significant text issues that severely impact understanding (e.g., contradictions, missing crucial information)
+         - High: Important text problems that should be addressed promptly (e.g., unclear explanations, confusing structure)
+         - Medium: Issues that affect text quality but don't compromise overall understanding (e.g., minor awkward phrasing)
+         - Low: Minor text improvements or style suggestions (e.g., word choice, formatting inconsistencies)
 
         For the "report" field:
         - Use proper markdown formatting with headers (##), bullet points, and emphasis
-        - Include sections for critical issues, improvements, and recommendations
-        - Act only as a text reviewer, do NOT suggest any improvements or recommendations on the process of the audit
-        - Add a summary section that highlights the most important findings
-        - Add a "Found Issues" section that lists the issues from both analysis. Keep all of them, unless they are the same issue.
+        - Include sections for critical text issues, improvements, and recommendations
+        - Act only as a text reviewer/copywriter, NOT a security analyst or technical auditor
+        - Add a summary section that highlights the most important text quality findings
+        - Add a "Found Issues" section that lists only the text-related issues from both analyses. Keep all text quality issues, unless they are the same issue. DO NOT include any security or technical issues related to the audit's findings.
 
         For the "issues" field:
-        - Keep all original key-value pairs from both analyses
+        - Keep all original key-value pairs from both analyses that relate to text quality
         - Add a "severity" field to each issue if not present (Critical, High, Medium, or Low)
         - Sort issues from most critical to least critical
         - If an issue appears in both analyses, merge them and keep the higher severity level
 
-        For the "overall_score" field, provide a numerical score from 0-10, where 10 is perfect.
+        For the "overall_score" field, provide a numerical score from 0-10, where 10 is perfect text quality.
 
         Do not include any other explanation or formatting outside of this JSON structure.
         """
