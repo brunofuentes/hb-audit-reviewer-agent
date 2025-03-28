@@ -26,6 +26,11 @@ class BaseAgentOutput(BaseModel):
 class SyntaxScoutOutput(BaseAgentOutput):
     """Output schema for syntax scout agent"""
 
+    json_result: Optional[dict] = Field(
+        default=None,
+        description="Structured analysis of the text, including grammar, punctuation, spelling, clarity, and style",
+    )
+
 
 class AuditQualityCheckerOutput(BaseAgentOutput):
     """Output schema for audit quality checker agent"""
