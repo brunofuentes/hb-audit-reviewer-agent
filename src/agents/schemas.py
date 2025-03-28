@@ -15,9 +15,6 @@ class BaseAgentOutput(BaseModel):
     """Base output schema for all agents"""
 
     result: str = Field(description="The full analysis result or explanation")
-    issues_detected: bool = Field(
-        description="Whether issues were detected in the code"
-    )
     error: Optional[str] = Field(
         default=None, description="Error message if analysis failed"
     )
@@ -28,18 +25,16 @@ class SyntaxScoutOutput(BaseAgentOutput):
 
     json_result: Optional[dict] = Field(
         default=None,
-        description="Structured analysis of the text, including grammar, punctuation, spelling, clarity, and style",
+        description="Structured analysis of the result",
     )
 
 
 class AuditQualityCheckerOutput(BaseAgentOutput):
     """Output schema for audit quality checker agent"""
 
-    structure_score: Optional[float] = Field(
-        default=None, description="Score for the structure of the audit report"
-    )
-    clarity_score: Optional[float] = Field(
-        default=None, description="Score for the clarity of the audit report"
+    json_result: Optional[dict] = Field(
+        default=None,
+        description="Structured analysis of the result",
     )
 
 
