@@ -19,7 +19,7 @@ class ReviewReportBuilder:
     ) -> str:
         """Create a prompt for generating a consolidated review report."""
         return f"""
-        
+
         Generate a comprehensive review report based on the webpage content following analysis:
 
         Webpage Content:
@@ -66,9 +66,9 @@ class ReviewReportBuilder:
         For the "report" field:
         - Use proper markdown formatting with headers (##), bullet points, and emphasis
         - Include sections for critical issues, improvements, and recommendations
+        - Act only as a text reviewer, do NOT suggest any improvements or recommendations on the process of the audit
         - Add a summary section that highlights the most important findings
-        - Add a "Found Issues" section that lists the issues of the issues field and
-            its key-value pairs as bullet points
+        - Add a "Found Issues" section that lists the issues from both analysis. Keep all of them, unless they are the same issue.
 
         For the "issues" field:
         - Keep all original key-value pairs from both analyses
