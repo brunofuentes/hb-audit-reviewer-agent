@@ -32,6 +32,12 @@ def get_langchain_llm(model_name="openai"):
             temperature=0,
             model_kwargs={"response_format": {"type": "json_object"}},
         ),
+        "openai-json-temp-05": ChatOpenAI(
+            model="gpt-4o",
+            api_key=os.getenv("OPENAI_API_KEY"),
+            temperature=0.5,
+            model_kwargs={"response_format": {"type": "json_object"}},
+        ),
     }
 
     return models.get(model_name.lower(), models["openai"])
