@@ -17,13 +17,15 @@ async def analyze_audit_url(
     """Run the complete analysis pipeline on a single audit URL"""
     print(f"Starting analysis of: {url}")
 
-    if model_name:
-        print(f"Using model from: {model_name}")
-
     # Create review entry in database
     db = get_db()
     review_obj = ReviewCreate(audit_url=url)
     db_review = review.create(db=db, obj_in=review_obj)
+
+    scraper_model_name = "anthropic"
+    model_name_syntax = "openai-json"
+    model_name_quality = "openai-json-temp-05"
+    model_name_report = "openai-json"
 
     if debug:
         print(
@@ -31,7 +33,8 @@ async def analyze_audit_url(
         )
 
     print("Scraping content...")
-    scraper = WebScraper(model_name=model_name)
+
+    scraper = WebScraper(model_name=scraper_model_name)
     webpage_content = await scraper.scrape(url=url)
     print("Content scraped successfully.")
 
@@ -40,7 +43,7 @@ async def analyze_audit_url(
         name=StepName.SCRAPING,
         input=scraper.get_prompt(url),
         output=webpage_content.model_dump(),
-        llm_model=model_name,
+        llm_model=scraper_model_name,
     )
     db_scraping_step = review_step.create(db=db, obj_in=scraping_step_obj)
 
@@ -53,9 +56,6 @@ async def analyze_audit_url(
             f"Output={db_scraping_step.output}"
         )
 
-    model_name_syntax = "openai-json"
-    model_name_quality = "openai-json-temp-05"
-    model_name_report = "openai-json"
     scout = SyntaxScout(model_name=model_name_syntax)
     quality_checker = AuditQualityChecker(model_name=model_name_quality)
     report_builder = ReviewReportBuilder(model_name=model_name_report)
