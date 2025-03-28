@@ -26,6 +26,6 @@ def save_report(url: str, review_report: ReviewReportBuilderOutput):
         f.write(
             f"**Overall Assessment:** {review_report.json_result['overall_score']}\n\n"
         )
-        f.write(review_report.result)
+        f.write(review_report.json_result["report"])
 
     return report_path
