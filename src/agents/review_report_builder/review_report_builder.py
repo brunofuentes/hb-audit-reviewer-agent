@@ -108,12 +108,24 @@ class ReviewReportBuilder:
         )
 
         try:
-
             response = self.llm.invoke(prompt)
             content = response.content
 
+            # Parse the JSON content
+            json_result = json.loads(content)
+
+            # Add the issues as a code block to the report field if it exists
+            if "report" in json_result and "issues" in json_result:
+                # Create a JSON string representation of the issues
+                issues_json = json.dumps(json_result["issues"], indent=2)
+
+                # Add the issues as a markdown code block to the end of the report
+                json_result[
+                    "report"
+                ] += f"\n\n## Raw Issues Data\n\n```json\n{issues_json}\n```"
+
             return ReviewReportBuilderOutput(
-                result=content, json_result=json.loads(content), error=None
+                result=content, json_result=json_result, error=None
             )
         except Exception as e:
             return ReviewReportBuilderOutput(
